@@ -1,3 +1,22 @@
+//! Temptree creates temporary trees of files:
+//!
+//! ```
+//! use temptree::temptree;
+//!
+//! let tree = temptree! {
+//!   foo: "a",
+//!   bar: {
+//!     baz: "b",
+//!   },
+//! };
+//!
+//! let foo_contents = std::fs::read_to_string(tree.path().join("foo")).unwrap();
+//! assert_eq!(foo_contents, "a");
+//!
+//! let baz_contents = std::fs::read_to_string(tree.path().join("bar/baz")).unwrap();
+//! assert_eq!(baz_contents, "b");
+//! ```
+
 use std::{collections::HashMap, fs, path::Path};
 
 pub fn tempdir() -> tempfile::TempDir {
