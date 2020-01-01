@@ -82,7 +82,8 @@ macro_rules! entries {
     $($name:tt : $contents:tt,)*
   } => {
     {
-      let mut entries: std::collections::HashMap<&'static str, $crate::Entry> = std::collections::HashMap::new();
+      let mut entries: std::collections::HashMap<&'static str, $crate::Entry> =
+        std::collections::HashMap::new();
 
       $(
         entries.insert($crate::name!($name), $crate::entry!($contents));
