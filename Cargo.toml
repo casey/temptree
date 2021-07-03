@@ -1,6 +1,6 @@
 [package]
 name        = "temptree"
-version     = "0.0.0"
+version     = "0.0.1"
 description = "Temporary trees of files"
 authors     = ["Casey Rodarmor <casey@rodarmor.com>"]
 license     = "CC0-1.0"
