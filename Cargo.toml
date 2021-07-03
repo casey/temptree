@@ -1,6 +1,6 @@
 [package]
 name        = "temptree"
-version     = "0.0.1"
+version     = "0.1.0"
 description = "Temporary trees of files"
 authors     = ["Casey Rodarmor <casey@rodarmor.com>"]
 license     = "CC0-1.0"
@@ -9,4 +9,4 @@ repository  = "https://github.com/casey/temptree"
 edition     = "2018"
 
 [dependencies]
-tempfile = "3"
+tempfile = "3.0.0"
