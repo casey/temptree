@@ -32,9 +32,3 @@ done BRANCH:
 # everyone's favorite animate paper clip
 clippy:
 	cargo clippy
-
-@lint:
-	echo Checking for FIXME/TODO...
-	! grep --color -En 'FIXME|TODO' src/*.rs
-	echo Checking for long lines...
-	! grep --color -En '.{101}' src/*.rs
