@@ -17,42 +17,59 @@
 //! assert_eq!(baz_contents, "b");
 //! ```
 
-use std::{collections::HashMap, fs, path::Path};
+use std::{collections::BTreeMap, fs, io, path::Path};
 
-pub fn tempdir() -> tempfile::TempDir {
-  tempfile::Builder::new()
-    .prefix("temptree")
-    .tempdir()
-    .expect("failed to create temporary directory")
+#[derive(Default)]
+pub struct Tree {
+  entries: BTreeMap<&'static str, Entry>,
 }
 
-pub enum Entry {
-  File {
-    contents: &'static str,
-  },
-  Dir {
-    entries: HashMap<&'static str, Entry>,
-  },
-}
+impl Tree {
+  pub fn instantiate(&self, base: &Path) -> io::Result<()> {
+    for (name, entry) in &self.entries {
+      entry.instantiate(&base.join(name))?;
+    }
+    Ok(())
+  }
 
-impl Entry {
-  fn instantiate(self, path: &Path) {
-    match self {
-      Entry::File { contents } => fs::write(path, contents).expect("Failed to write tempfile"),
-      Entry::Dir { entries } => {
-        fs::create_dir(path).expect("Failed to create tempdir");
+  pub fn insert(&mut self, name: &'static str, entry: Entry) {
+    self.entries.insert(name, entry);
+  }
 
-        for (name, entry) in entries {
-          entry.instantiate(&path.join(name));
+  pub fn map(&mut self, mut f: impl FnMut(&str, &str) -> String) {
+    let mut stack = vec![self];
+
+    while let Some(tree) = stack.pop() {
+      for (name, entry) in &mut tree.entries {
+        match entry {
+          Entry::File { contents } => {
+            *contents = f(name, contents);
+          }
+          Entry::Tree { tree } => stack.push(tree),
         }
       }
     }
   }
+}
 
-  pub fn instantiate_base(base: &Path, entries: HashMap<&'static str, Entry>) {
-    for (name, entry) in entries {
-      entry.instantiate(&base.join(name));
+pub enum Entry {
+  File { contents: String },
+  Tree { tree: Tree },
+}
+
+impl Entry {
+  fn instantiate(&self, path: &Path) -> io::Result<()> {
+    match self {
+      Entry::File { contents } => fs::write(path, contents)?,
+      Entry::Tree { tree } => {
+        fs::create_dir(path)?;
+
+        for (name, entry) in &tree.entries {
+          entry.instantiate(&path.join(name))?;
+        }
+      }
     }
+    Ok(())
   }
 }
 
@@ -63,33 +80,26 @@ macro_rules! entry {
       $($contents:tt)*
     }
   } => {
-    $crate::Entry::Dir{entries: $crate::entries!($($contents)*)}
+    $crate::Entry::Tree{tree: $crate::tree!($($contents)*)}
   };
   {
     $contents:expr
   } => {
-    $crate::Entry::File{contents: $contents}
+    $crate::Entry::File{contents: $contents.into()}
   };
 }
 
 #[macro_export]
-macro_rules! entries {
-  {
-  } => {
-    std::collections::HashMap::new()
-  };
-  {
-    $($name:tt : $contents:tt,)*
-  } => {
+macro_rules! tree {
+  {} => { $crate::Tree::default() };
+  { $($name:tt : $contents:tt),* $(,)? } => {
     {
-      let mut entries: std::collections::HashMap<&'static str, $crate::Entry> =
-        std::collections::HashMap::new();
+      #[allow(unused_mut)]
+      let mut tree = $crate::Tree::default();
 
-      $(
-        entries.insert($crate::name!($name), $crate::entry!($contents));
-      )*
+      $( tree.insert($crate::name!($name), $crate::entry!($contents)); )*
 
-      entries
+      tree
     }
   }
 }
@@ -114,42 +124,22 @@ macro_rules! temptree {
     $($contents:tt)*
   } => {
     {
-      let tempdir = $crate::tempdir();
-
-      let entries = $crate::entries!($($contents)*);
-
-      $crate::Entry::instantiate_base(&tempdir.path(), entries);
-
-      tempdir
+      $crate::temptree_result!($($contents)*).expect("failed to instantiate temptree")
     }
   }
 }
 
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn temptree_file() {
-    let tmpdir = temptree! {
-      foo: "bar",
-    };
-
-    let contents = fs::read_to_string(tmpdir.path().join("foo")).unwrap();
-
-    assert_eq!(contents, "bar");
-  }
-
-  #[test]
-  fn temptree_dir() {
-    let tmpdir = temptree! {
-      foo: {
-        bar: "baz",
-      },
-    };
-
-    let contents = fs::read_to_string(tmpdir.path().join("foo/bar")).unwrap();
-
-    assert_eq!(contents, "baz");
+#[macro_export]
+macro_rules! temptree_result {
+  {
+    $($contents:tt)*
+  } => {
+    {
+      tempfile::Builder::new().prefix("temptree").tempdir()
+        .and_then(|tempdir| {
+          $crate::tree!($($contents)*).instantiate(&tempdir.path())?;
+          Ok(tempdir)
+        })
+    }
   }
 }

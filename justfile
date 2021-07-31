@@ -5,7 +5,7 @@ export RUST_BACKTRACE := bt
 version := `sed -En 's/version[[:space:]]*=[[:space:]]*"([^"]+)"/v\1/p' Cargo.toml | head -1`
 
 watch:
-	cargo watch --clear --exec test
+	cargo watch --clear --exec ltest
 
 test:
 	cargo test
