@@ -4,6 +4,10 @@ export RUST_BACKTRACE := bt
 
 version := `sed -En 's/version[[:space:]]*=[[:space:]]*"([^"]+)"/v\1/p' Cargo.toml | head -1`
 
+all: clippy test forbid
+	git diff --no-ext-diff --quiet --exit-code
+	cargo test
+
 watch:
 	cargo watch --clear --exec ltest
 
@@ -13,12 +17,8 @@ test:
 forbid:
 	./bin/forbid
 
-publish-check: clippy test forbid
+publish: all
 	git branch | grep '* master'
-	git diff --no-ext-diff --quiet --exit-code
-	cargo test
-
-publish: publish-check
 	cargo publish
 	git tag -a {{version}} -m 'Release {{version}}'
 	git push github {{version}}
@@ -30,6 +30,12 @@ done BRANCH:
 	git pull --rebase github master
 	git diff --no-ext-diff --quiet --exit-code {{BRANCH}}
 	git branch -D {{BRANCH}}
+
+push: all
+	git push
+
+pr: all
+	gh pr create
 
 # everyone's favorite animate paper clip
 clippy:
