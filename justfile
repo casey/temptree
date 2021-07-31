@@ -10,7 +10,10 @@ watch:
 test:
 	cargo test
 
-publish-check: lint clippy test
+forbid:
+	./bin/forbid
+
+publish-check: lint clippy test forbid
 	git branch | grep '* master'
 	git diff --no-ext-diff --quiet --exit-code
 	grep {{version}} CHANGELOG.md
