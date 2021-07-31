@@ -2,8 +2,6 @@ bt := '0'
 
 export RUST_BACKTRACE := bt
 
-version := `sed -En 's/version[[:space:]]*=[[:space:]]*"([^"]+)"/v\1/p' Cargo.toml | head -1`
-
 watch:
 	cargo watch --clear --exec ltest
 
@@ -16,7 +14,6 @@ forbid:
 publish-check: clippy test forbid
 	git branch | grep '* master'
 	git diff --no-ext-diff --quiet --exit-code
-	grep {{version}} CHANGELOG.md
 	cargo test
 
 publish: publish-check
