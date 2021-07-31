@@ -7,6 +7,11 @@ license     = "CC0-1.0"
 homepage    = "https://github.com/casey/temptree"
 repository  = "https://github.com/casey/temptree"
 edition     = "2018"
+autotests   = false
 
 [dependencies]
 tempfile = "3.0.0"
+
+[[test]]
+name = "integration"
+path = "tests/lib.rs"
